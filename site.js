@@ -181,7 +181,7 @@ function buildFlow(day, r) {
     <div class="flow" id="flow"><svg class="links" id="links" aria-hidden="true"></svg>
       ${pieces.map((p, i) => `<div class="item" style="left:${placed[i].l}%;top:${placed[i].t}%;width:${placed[i].w}%;height:${placed[i].h}%">${p}</div>`).join("")}
     </div>
-    <p class="foot">${r ? "Made up for now: the rock, the light line, the marks, the petals, the print." : day.made ? "Made up for now: this day's sensor readings. No rock yet." : `${day.n} of 92 readings. No rock yet.`}</p>`;
+    <p class="foot">${r ? "Made up for now: the rock, the light line, the marks, the petals, the print." : day.made ? "" : `${day.n} of 92 readings. No rock yet.`}</p>`;
   document.getElementById("close").addEventListener("click", closeDay);
   if (!r) return;
   const grey = (S, blur) => { const c = document.createElement("canvas"); c.width = c.height = S; r.drawPetals(c.getContext("2d"), S, false);
