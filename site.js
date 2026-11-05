@@ -157,15 +157,15 @@ function greyBloom(day) {   // thread colours become four greys
 let placed = [];
 function buildFlow(day, r) {
   const [y, m, d] = day.date.split("-");
-  const bars = (day.beats || []).map(b => `<i style="${b.level ? `background:${["", "#8a8a8a", "#464646", "#0a0a0a"][b.level]}` : ""}"></i>`).join("");
+  const bars = day.beats.map(b => `<i style="${b.level ? `background:${["", "#8a8a8a", "#464646", "#0a0a0a"][b.level]}` : ""}"></i>`).join("");
   const rot = Math.PI / 2 - 2 * Math.PI * 6.5 / 24;
   const before = r && still(r, { P: r.P0, C: r.C0 }, rot), after = r && still(r, r.finalSt, rot);
-  const bloom = day.n ? greyBloom(day) : "";
+  const bloom = greyBloom(day);
   const pieces = [
     r && `<img src="${before}" alt="The rock before">`,
     `<div class="minis">${day.vars.map(mini).join("")}</div>`,
-    day.n && bloom.replace('viewBox="0 0 560 560"', 'viewBox="105 105 350 350"').replace("<svg ", '<svg role="img" aria-label="Embroidery pattern" '),
-    day.n && `<div class="bars" role="img" aria-label="The 96 beats of the score">${bars}</div>`,
+    bloom.replace('viewBox="0 0 560 560"', 'viewBox="105 105 350 350"').replace("<svg ", '<svg role="img" aria-label="Embroidery pattern" '),
+    `<div class="bars" role="img" aria-label="The 96 beats of the score">${bars}</div>`,
     r && `<img src="${after}" alt="The rock after">`,
     r && `<canvas id="petalsC" width="420" height="420" role="img" aria-label="Petals"></canvas>`,
     r && `<canvas id="finalC" width="520" height="520" role="img" aria-label="The printed and embroidered piece"></canvas>`,
@@ -181,7 +181,7 @@ function buildFlow(day, r) {
     <div class="flow" id="flow"><svg class="links" id="links" aria-hidden="true"></svg>
       ${pieces.map((p, i) => `<div class="item" style="left:${placed[i].l}%;top:${placed[i].t}%;width:${placed[i].w}%;height:${placed[i].h}%">${p}</div>`).join("")}
     </div>
-    <p class="foot">${r ? "Made up for now: the rock, the light line, the marks, the petals, the print." : day.n ? `${day.n} of 92 readings. No rock yet.` : "Forecast only. The sensors weren't running yet."}</p>`;
+    <p class="foot">${r ? "Made up for now: the rock, the light line, the marks, the petals, the print." : day.made ? "Made up for now: this day's sensor readings. No rock yet." : `${day.n} of 92 readings. No rock yet.`}</p>`;
   document.getElementById("close").addEventListener("click", closeDay);
   if (!r) return;
   const grey = (S, blur) => { const c = document.createElement("canvas"); c.width = c.height = S; r.drawPetals(c.getContext("2d"), S, false);
