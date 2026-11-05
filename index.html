@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Translation Chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  /* Follows the Unearthed site: white page, DM Mono, a ticker. Single theme by choice.
+     Layout: one screen, never scrolls. Weeks of 7 keys, centred, pushed upward as days pass.
+     Seven black folders on the left. The pop-up is a see-through square in black and grey; only the rock keeps its colour. */
+  :root {
+    --bg: #fff; --ink: #111; --mute: #8c8c8c; --line: #e6e6e6;
+    --key-a: #4c4c4c; --key-b: #272727; --key-edge: #141414; --key-ink: #e4e4e4;
+    --s: 86px; --g: 20px; --travel: 2px;
+    --mono: "DM Mono", ui-monospace, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--mono); font-weight: 300; font-size: 13px; }
+  button { font: inherit; color: inherit; }
+  .label { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--mute); }
+
+  .ticker { position: fixed; top: 0; left: 0; right: 0; height: 26px; border-bottom: 1px solid var(--line); overflow: hidden; display: flex; align-items: center; }
+  .track { display: flex; gap: 72px; width: max-content; animation: drift 420s linear infinite; font-size: 10px; letter-spacing: .1em; color: #b5b5b5; white-space: nowrap; }
+  @keyframes drift { to { transform: translateX(-50%); } }
+  .top, .bottom { position: fixed; left: 24px; right: 24px; display: flex; justify-content: space-between; gap: 16px; }
+  .top { top: 40px; } .bottom { bottom: 16px; }
+  .top b { font-weight: 300; color: var(--ink); }
+
+  /* the weeks: JS sets --y so the block rises a little with every day */
+  .weeks { position: fixed; left: 50%; top: 0; display: grid; grid-template-columns: repeat(7, var(--s)); grid-auto-rows: var(--s); gap: var(--g);
+    transform: translate(-50%, var(--y, 40vh)); }
+  .weeks.ready { transition: transform 2.4s cubic-bezier(.25, .7, .2, 1); }   /* only slides for new days, not on load */
+
+  .key { all: unset; position: relative; display: block; width: var(--s); height: var(--s); border-radius: 0; overflow: hidden; cursor: pointer;
+    background: linear-gradient(155deg, var(--key-a), var(--key-b)); color: var(--key-ink);
+    box-shadow: 0 var(--travel) 0 var(--key-edge);
+    transition: transform .11s ease-out, box-shadow .11s ease-out; -webkit-tap-highlight-color: transparent; }
+  .key:hover { filter: brightness(1.15); }
+  .key:active, .key.down { transform: translateY(var(--travel)); box-shadow: 0 0 0 var(--key-edge); transition-duration: .05s; }
+  .key:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+  .key.new { animation: rise 1.4s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  .key canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .key span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: clamp(9px, calc(var(--s) * .17), 14px); letter-spacing: .08em; font-variant-numeric: tabular-nums; transition: opacity .25s; pointer-events: none; }
+  .key.on span { opacity: 0; }
+
+  /* folders */
+  .folders { position: fixed; left: 24px; top: 66px; bottom: 40px; width: 96px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; z-index: 4; }
+  .folders.right { left: auto; right: 24px; width: auto; bottom: auto; align-items: flex-end; }
+  .folders.right .folder i { margin-left: auto; }
+  .folders.right .folder b { text-align: right; }
+  .files.onright { left: auto; right: 84px; }
+  .folder { all: unset; cursor: pointer; display: block; }
+  .folder i { display: block; position: relative; width: 44px; height: 30px; margin-top: 5px; background: #000; transition: transform .1s; }
+  .folder i::before { content: ""; position: absolute; left: 0; top: -5px; width: 18px; height: 5px; background: #000; }
+  .folder:hover i, .folder[aria-expanded="true"] i { transform: translateY(-2px); }
+  .folder b { display: block; font-weight: 300; font-size: 10.5px; letter-spacing: .04em; margin-top: 4px; }
+  .folder:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+  .files { position: fixed; left: 128px; z-index: 5; background: #000; color: #e4e4e4; padding: 8px 0; min-width: 190px; display: none; }
+  .files.show { display: block; }
+  .files button { all: unset; display: block; width: 100%; box-sizing: border-box; padding: 3px 14px; font-size: 11px; cursor: pointer; }
+  .files button:hover, .files button:focus-visible { background: #2c2c2c; }
+  @media (max-width: 640px) { .folders { left: 10px; width: 66px; } .folder i { width: 32px; height: 22px; } .folder b { font-size: 8px; } .files { left: 80px; min-width: 170px; } .folders.right { right: 10px; } .files.onright { right: 50px; } .top, .bottom { left: 12px; right: 12px; } }
+
+  /* the pop-up: a perfect square, see-through, no boxes */
+  .shade { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10; }
+  .shade.show { display: flex; }
+  .sub { --side: min(84vmin, 620px); width: var(--side); height: var(--side); container-type: size; overflow: hidden; position: relative; color: #0b0b0b;
+    background: linear-gradient(150deg, rgba(5, 5, 5, .35), rgba(44, 44, 44, .35) 55%, rgba(90, 90, 90, .35));
+    -webkit-backdrop-filter: blur(32px); backdrop-filter: blur(32px); animation: pop .22s ease-out; }
+  @keyframes pop { from { transform: scale(.94); opacity: 0; } }
+  .sub h3.when { position: absolute; left: 3.4cqw; top: 2.6cqw; margin: 0; font-weight: 300; font-size: 2.3cqw; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+  .close { background: none; border: 0; color: #0b0b0b; font-size: 3.4cqw; line-height: 1; cursor: pointer; padding: 0 2px; position: absolute; top: 2.2cqw; right: 2.6cqw; z-index: 3; }
+  .close:focus-visible { outline: 1px solid #000; }
+  .flow { position: absolute; left: 4cqw; right: 4cqw; top: 7cqw; bottom: 6cqw; }
+  .flow svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .item { position: absolute; display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 0; }
+  .item img, .item canvas { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .item > svg { width: 100%; height: 100%; display: block; }
+  .minis { width: 100%; height: 100%; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1.2cqw; }
+  .minis svg { width: 100%; height: 100%; display: block; }
+  .bars { width: 100%; aspect-ratio: 24 / 7; display: grid; grid-template-columns: repeat(24, 1fr); grid-auto-flow: column; grid-template-rows: repeat(4, 1fr); gap: 1px; }
+  .bars i { display: block; background: rgba(0, 0, 0, .07); }
+  .foot { position: absolute; left: 3.4cqw; right: 3.4cqw; bottom: 2cqw; margin: 0; font-size: clamp(7px, 1.45cqw, 9.5px); color: #1e1e1e; }
+
+  /* a markdown file, in the same square */
+  .doc { position: absolute; inset: 0; overflow-y: auto; padding: 5cqw 5.5cqw; font-size: clamp(10px, 1.95cqw, 12.5px); line-height: 1.55; overscroll-behavior: contain; }
+  .doc h1 { font-weight: 400; font-size: 1.5em; letter-spacing: .04em; margin: 0 0 .8em; }
+  .doc h2 { font-weight: 400; font-size: 1.1em; margin: 1.5em 0 .4em; }
+  .doc p, .doc ul, .doc ol { margin: .5em 0; }
+  .doc ul, .doc ol { padding-left: 1.6em; }
+  .doc table { width: 100%; border-collapse: collapse; margin: .7em 0; font-size: .92em; }
+  .doc th, .doc td { text-align: left; vertical-align: top; padding: .2em .6em .2em 0; border-bottom: 1px solid rgba(0, 0, 0, .3); }
+  .doc th { font-weight: 400; border-bottom-color: #000; }
+  .doc code { font-family: var(--mono); }
+  .doc a { color: inherit; }
+  @media (prefers-reduced-motion: reduce) { .track { animation: none; } .weeks.ready { transition: none; } .key.new, .sub { animation: none; } }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div class="ticker" aria-hidden="true"><div class="track" id="track"></div></div>
+<div class="top label"><b>Translation Chain</b><span id="count"></span></div>
+<aside class="folders" id="folders" aria-label="Rules"></aside>
+<aside class="folders right" id="right" aria-label="Means"></aside>
+<div class="files" id="files"></div>
+<main class="weeks" id="weeks" aria-label="Days"></main>
+<div class="bottom label"><span>Providence, Rhode Island</span><span>hover · press</span></div>
+<div class="shade" id="shade"><div class="sub" id="sub" role="dialog" aria-modal="true" aria-labelledby="subDate" tabindex="-1"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="data.js"></script>
+<script type="module" src="site.js"></script>
+</body>
+</html>
