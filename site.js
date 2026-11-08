@@ -216,7 +216,7 @@ const FOLDERS = {
   Data: ["land-acknowledgment", "placement", "sensors", "database", "data-rules"],
   Reconstruction: ["reconstruction-rules"],
   Extrapolation: ["shape-rules"],
-  Tactility: ["choreography-rules"],
+  Tactility: ["choreography-rules", "sewing-patterns"],
   Gesture: ["scanning-rules"],
   Module: ["petal-rules"],
   Final: ["combination-rules"],
