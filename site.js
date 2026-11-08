@@ -11,11 +11,13 @@ const weeks = document.getElementById("weeks");
 const WORDS = ["rock", "roche", "Fels", "piedra", "pietra", "pedra", "камень", "岩", "石", "바위", "صخرة", "סלע", "चट्टान", "βράχος", "kivi", "kaya", "skała", "klippe", "rots", "batu", "đá", "pōhaku", "steinn", "taş", "kő", "skála"];
 document.getElementById("track").innerHTML = [...WORDS, ...WORDS, ...WORDS, ...WORDS].map(w => `<span>${w}</span>`).join("");
 
-/* dates: every day from FIRST up to yesterday. ?today=2026-12-01 previews a later date. */
+/* dates: every day from FIRST up to yesterday, 35 days at most (Oct 25 to Nov 28). ?today=2026-12-01 previews a later date. */
 const todayRI = () => new URLSearchParams(location.search).get("today")
   || new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 function passedDays() {
-  const out = [], end = new Date(todayRI() + "T12:00:00Z");
+  const out = [], last = new Date(FIRST + "T12:00:00Z");
+  last.setUTCDate(last.getUTCDate() + 35);
+  const end = new Date(Math.min(new Date(todayRI() + "T12:00:00Z"), last));
   for (let d = new Date(FIRST + "T12:00:00Z"); d < end; d.setUTCDate(d.getUTCDate() + 1)) out.push(d.toISOString().slice(0, 10));
   return out;
 }
